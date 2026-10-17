@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import {createRequire} from 'node:module';
+import ts from 'typescript';
+import React from 'react';
+import {renderToString} from 'react-dom/server';
+const require=createRequire(import.meta.url),out={};
+const code=ts.transpileModule(fs.readFileSync('src/App.tsx','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;
+new Function('require','exports',code)(require,out);
+const markup=renderToString(React.createElement(out.default));
+const html=fs.readFileSync('dist/index.html','utf8');
+if(!html.includes('<div id="root"></div>'))throw new Error('Prerender target not found');
+fs.writeFileSync('dist/index.html',html.replace('<div id="root"></div>',`<div id="root">${markup}</div>`));
+console.log('Homepage prerendered for search engines and fast first paint.');
